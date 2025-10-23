@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Login / Register
+{% endblock %}
+
+{% block content %}
+
+{% if page == 'login' %}
+    <section>
+        <form action="" method='POST'>
+            {% csrf_token %}
+            <label for="">Username:</label>
+            <input type="text" name='username' placeholder='Enter username here'/>
+            
+            <label for="">Password:</label>
+            <input type="password" name='password' placeholder='Enter password'/>
+
+            <button>Login</button>
+        </form>
+        {% if messages %}
+            <ul class='messages'>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <p>Haven't signed up yet?</p>
+        <a href="{% url 'base:register' %}">Sign Up</a>
+    </section>
+
+{% else %}
+
+    <section>
+        <form action="" method='POST'>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button>Register</button>
+        </form>
+        {% if messages %}
+            <ul class='messages'>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <p>Already signed up?</p>
+        <a href="{% url 'base:login' %}">Login</a>
+    </section>
+{% endif %}
+{% endblock %}
