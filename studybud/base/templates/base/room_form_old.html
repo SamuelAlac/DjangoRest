@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Room form
+{% endblock %}
+
+{% block content %}
+    <section>
+        <form action="" method='POST'>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button>Submit</button>
+        </form>
+    </section>
+{% endblock %}

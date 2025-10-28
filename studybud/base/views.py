@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect
 from django.db.models import Q
 from .models import Room, Topic, User, Message
-from .forms import RoomForm
+from .forms import RoomForm, UserForm, CustomUserCreationForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.contrib.auth.forms import UserCreationForm
+# from django.contrib.auth.forms import UserCreationForm
+
 
 # Create your views here.
 
@@ -16,20 +17,20 @@ def login_view(request):
         return redirect('/')
 
     if request.method == 'POST':
-        username = request.POST.get('username')#.lower()
+        email = request.POST.get('email')#.lower()
         password = request.POST.get('password')
         try:
-            user = User.objects.get(username=username)
+            user = User.objects.get(email=email)
         except:
             messages.error(request, 'User does not exist')
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email, password=password)
 
         if user:
             login(request, user)
             return redirect('/')
         else:
-            messages.error(request, 'username or password does not exist')
+            messages.error(request, 'email or password does not exist')
     
     context = { 'page': page }
     return render(request, 'base/login_register.html', context)
@@ -39,10 +40,10 @@ def logout_user(request):
     return redirect('/')
 
 def register_view(request):
-    form = UserCreationForm()
+    form = CustomUserCreationForm()
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False) # dont commit until modified
             #user.username = user.username.lower() make the username lowercase
@@ -78,6 +79,20 @@ def user_profile_view(request, pk):
     context = { 'user': user, 'rooms': rooms, 'room_messages': room_messages, 'topics': topics }
     return render(request, 'base/profile.html', context)
 
+@login_required(login_url='base:login')
+def update_user_view(request):
+    user = request.user
+    form = UserForm(instance=request.user)
+
+    if request.method == 'POST':
+        form = UserForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('base:user-profile', pk=user.id)
+
+    return render(request, 'base/update_user.html', { 'form': form })
+
+
 def room_view(request, pk):
     room = Room.objects.get(id=pk)
     room_messages =  room.message_set.all().order_by('-createdAt') # order by recent
@@ -100,33 +115,49 @@ def room_view(request, pk):
 @login_required(login_url='base:login')
 def room_form_view(request):
     form = RoomForm()
+    topics = Topic.objects.all()
     if request.method == 'POST':
         #request.POST.get('name') gets the name only
-        form = RoomForm(request.POST)
-        if form.is_valid():
-            room = form.save(commit=False)
-            room.host = request.user
-            room.save()
-            return redirect('/')
+        topic_name = request.POST.get('topic')
+        topic, createdAt = Topic.objects.get_or_create(name=topic_name)
+        Room.objects.create(
+            host=request.user,
+            topic=topic,
+            name=request.POST.get('name'),
+            description=request.POST.get('description')
+        )
+        return redirect('/')
+        # form = RoomForm(request.POST)
+        # if form.is_valid():
+        #     room = form.save(commit=False)
+        #     room.host = request.user
+        #     room.save()
+            # return redirect('/')
     
-    context = { 'form': form }
+    context = { 'form': form, 'topics': topics }
     return render(request, 'base/room_form.html', context)
 
 @login_required(login_url='base:login')
 def update_room_form_view(request, pk):
     room = Room.objects.get(id=pk)
     form = RoomForm(instance=room)
-
+    topics = Topic.objects.all()
     if request.user != room.host and not request.user.is_superuser:
         return HttpResponse('You are not allowed here!')
 
     if request.method == 'POST':
-        form = RoomForm(request.POST, instance=room)
-        if form.is_valid():
-            form.save()
-            return redirect('/')
+        topic_name = request.POST.get('topic')
+        topic, created = Topic.objects.get_or_create(name=topic_name)
+        room.topic = topic
+        room.name = request.POST.get('name')
+        room.description = request.POST.get('description')
+        room.save()
+        # form = RoomForm(request.POST, instance=room)
+        # if form.is_valid():
+        #     form.save()
+        #     return redirect('/')
     
-    context = { 'form': form }
+    context = { 'form': form, 'topics': topics, 'room': room }
     return render(request, 'base/room_form.html', context)
 
 @login_required(login_url='base:login')
