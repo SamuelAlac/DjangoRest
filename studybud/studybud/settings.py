@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+import osaa
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,8 +80,12 @@ WSGI_APPLICATION = 'studybud.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://studybud_3741_user:YNcNRf9w8sOKDoIMZT7blDF2jQkjJX8m@dpg-d41a278dl3ps73d8l4r0-a.singapore-postgres.render.com/studybud_3741',
-        conn_max_age=600
+        default=os.getenv(
+            'DATABASE_URL', 
+            'postgresql://studybud_3741_user:YNcNRf9w8sOKDoIMZT7blDF2jQkjJX8m@dpg-d41a278dl3ps73d8l4r0-a.singapore-postgres.render.com/studybud_3741'
+        ),
+        conn_max_age=600,
+        ssl_require=True
     )
 }
 
